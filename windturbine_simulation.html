@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windturbinen-Experiment Simulation</title>
+    <style>
+        :root {
+            --tft-background: #0841;
+            --tft-black: #000;
+            --tft-white: #fff;
+            --tft-text: #fff;
+            --tft-header: #04ff;
+            --tft-highlight: #07ff;
+            --tft-warning: #f844;
+            --tft-success: #0740;
+            --tft-grid: #39c7;
+            --tft-light-text: #bdf7;
+            --tft-chart-bar: #05b6;
+            --tft-chart-accent: #fd20;
+            --tft-outline: #7bef;
+            --tft-title-bg: #0861;
+            --tft-subtitle: #ad75;
+            --tft-status-bar: #0882;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .display-container {
+            position: relative;
+            width: 480px;
+            height: 320px;
+            background-color: var(--tft-background);
+            border: 2px solid #555;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #34495e;
+        }
+
+        button.active {
+            background-color: #3498db;
+        }
+
+        .navigation {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .screen-info {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            max-width: 480px;
+            text-align: center;
+        }
+
+        /* Gemeinsame Elemente */
+        .title-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 460px;
+            height: 30px;
+            background-color: var(--tft-title-bg);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: var(--tft-header);
+            font-weight: bold;
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background-color: var(--tft-status-bar);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: var(--tft-text);
+            font-size: 12px;
+        }
+
+        .back-button {
+            position: absolute;
+            right: 5px;
+            bottom: 2px;
+            background-color: var(--tft-subtitle);
+            color: var(--tft-text);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        /* Verbesserte Motor-Status-Box - größer und besser sichtbar */
+        .motor-status {
+            position: absolute;
+            top: 12px;
+            right: 230px;
+            width: 15px;
+            height: 15px;
+            background-color: var(--tft-success);
+            border: 2px solid white;
+            border-radius: 3px;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Verbesserte Batterie-Anzeige - größer und besser sichtbar */
+        .battery-status {
+            position: absolute;
+            top: 12px;
+            right: 210px;
+            width: 25px;
+            height: 15px;
+            border: 2px solid white;
+            border-radius: 2px;
+            display: flex;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .battery-fill {
+            width: 80%;
+            height: 11px;
+            margin: 2px;
+            background-color: var(--tft-success);
+        }
+
+        .battery-text {
+            position: absolute;
+            top: 12px;
+            right: 150px;
+            font-size: 12px;
+            color: var(--tft-text);
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Spezifische Bildschirme */
+        .content {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            width: 460px;
+            height: 250px;
+            overflow: hidden;
+        }
+
+        /* Intro Screen */
+        .intro-title {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--tft-title-bg);
+            color: var(--tft-header);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            width: 300px;
+        }
+
+        .intro-subtitle {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--tft-outline);
+            color: var(--tft-text);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            width: 200px;
+        }
+
+        .intro-line {
+            position: absolute;
+            top: 85px;
+            left: 20px;
+            width: 420px;
+            height: 1px;
+            background-color: var(--tft-grid);
+        }
+
+        .intro-text {
+            position: absolute;
+            top: 95px;
+            left: 20px;
+            color: var(--tft-light-text);
+            font-size: 14px;
+        }
+
+        .intro-steps {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            width: 420px;
+        }
+
+        .step-box {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .step-number {
+            width: 16px;
+            height: 16px;
+            background-color: var(--tft-highlight);
+            color: var(--tft-background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        .step-text {
+            color: var(--tft-text);
+            font-size: 12px;
+        }
+
+        .factor-box {
+            position: absolute;
+            top: 220px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--tft-outline);
+            color: var(--tft-subtitle);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: center;
+            width: 300px;
+        }
+
+        .data-buttons {
+            position: absolute;
+            top: 250px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .data-button {
+            background-color: var(--tft-title-bg);
+            color: var(--tft-highlight);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            width: 210px;
+            text-align: center;
+        }
+
+        .continue-hint {
+            position: absolute;
+            top: 285px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--tft-success);
+            color: var(--tft-text);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: center;
+            width: 150px;
+        }
+
+        /* Teilfaktorieller Plan */
+        .plan-table {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 450px;
+            height: 190px;
+            border: 1px solid var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            height: 22px;
+            background-color: var(--tft-title-bg);
+            display: flex;
+            align-items: center;
+            color: var(--tft-highlight);
+            font-size: 12px;
+        }
+
+        .table-header div {
+            padding: 0 5px;
+            text-align: center;
+        }
+
+        .table-row {
+            height: 21px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            border-top: 1px solid var(--tft-grid);
+        }
+
+        .table-row.even {
+            background-color: rgba(16, 130, 130, 0.2);
+        }
+
+        .table-row div {
+            padding: 0 5px;
+            text-align: center;
+            color: var(--tft-text);
+        }
+
+        .table-cell-minus {
+            color: var(--tft-light-text) !important;
+        }
+
+        .table-cell-plus {
+            color: var(--tft-highlight) !important;
+        }
+
+        .legend-box {
+            position: absolute;
+            top: 200px;
+            left: 20px;
+            width: 440px;
+            height: 40px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+        }
+
+        .legend-minus {
+            color: var(--tft-light-text);
+            margin-right: 5px;
+        }
+
+        .legend-text {
+            color: var(--tft-text);
+            margin-right: 20px;
+        }
+
+        .legend-plus {
+            color: var(--tft-highlight);
+            margin-right: 5px;
+        }
+
+        /* Messung Screen */
+        .measurement-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .factor-settings {
+            width: 210px;
+            height: 140px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .factor-title {
+            color: var(--tft-highlight);
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .factor-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .factor-name {
+            width: 80px;
+            color: var(--tft-text);
+        }
+
+        .factor-value {
+            flex-grow: 1;
+        }
+
+        .factor-indicator {
+            width: 40px;
+            height: 15px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            font-size: 10px;
+        }
+
+        .factor-low {
+            background-color: rgba(16, 130, 130, 0.5);
+            color: var(--tft-light-text);
+        }
+
+        .factor-high {
+            background-color: rgba(4, 255, 255, 0.3);
+            color: var(--tft-highlight);
+        }
+
+        .measurements {
+            width: 230px;
+            height: 140px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .measurement-title {
+            color: var(--tft-highlight);
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .measurement-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .measurement-label {
+            width: 80px;
+            color: var(--tft-text);
+        }
+
+        .measurement-value {
+            width: 95px;
+            height: 15px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .measurement-empty {
+            border: 1px solid var(--tft-grid);
+            color: var(--tft-text);
+        }
+
+        .measurement-filled {
+            background-color: var(--tft-success);
+            color: var(--tft-text);
+        }
+
+        .results-box {
+            position: absolute;
+            top: 200px;
+            left: 15px;
+            width: 450px;
+            height: 60px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 0 10px;
+            font-size: 12px;
+        }
+
+        .progress-label {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            color: var(--tft-subtitle);
+        }
+
+        .progress-bar-container {
+            position: absolute;
+            top: 22px;
+            left: 170px;
+            width: 250px;
+            height: 15px;
+            border: 1px solid var(--tft-grid);
+        }
+
+        .progress-bar-fill {
+            height: 11px;
+            margin: 2px;
+            background-color: var(--tft-success);
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            color: var(--tft-text);
+        }
+
+        .average-label {
+            position: absolute;
+            top: 5px;
+            left: 25px;
+            color: var(--tft-subtitle);
+        }
+
+        .average-value {
+            position: absolute;
+            top: 2px;
+            left: 170px;
+            width: 80px;
+            height: 18px;
+            background-color: var(--tft-highlight);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--tft-text);
+            font-size: 10px;
+        }
+
+        .keypad-help {
+            position: absolute;
+            top: 270px;
+            left: 15px;
+            width: 450px;
+            height: 30px;
+            background-color: var(--tft-subtitle);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            color: var(--tft-text);
+            font-size: 12px;
+        }
+
+        /* Auswertung Screen */
+        .results-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .results-table {
+            width: 230px;
+            height: 190px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .effects-table {
+            width: 235px;
+            height: 140px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .selected-factors {
+            position: absolute;
+            top: 198px;
+            left: 245px;
+            width: 235px;
+            height: 40px;
+            background-color: var(--tft-success);
+            border-radius: 5px;
+            padding: 0 10px;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .selected-title {
+            color: var(--tft-text);
+            margin-bottom: 5px;
+        }
+
+        .selected-names {
+            color: var(--tft-text);
+        }
+
+        .chart-options {
+            position: absolute;
+            top: 248px;
+            left: 10px;
+            width: 470px;
+            height: 50px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 5px;
+            font-size: 12px;
+        }
+
+        .chart-option {
+            width: 105px;
+            height: 30px;
+            background-color: var(--tft-title-bg);
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--tft-highlight);
+            font-size: 10px;
+        }
+
+        /* Vollfaktorieller Plan */
+        .fixed-factors {
+            position: absolute;
+            top: 0;
+            left: 20px;
+            width: 440px;
+            height: 60px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .fixed-header {
+            height: 18px;
+            background-color: var(--tft-title-bg);
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: var(--tft-highlight);
+            font-size: 12px;
+        }
+
+        .fixed-content {
+            padding: 10px;
+            color: var(--tft-text);
+            font-size: 12px;
+        }
+
+        .full-plan {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            width: 440px;
+            height: 170px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        /* Vollfaktoriell Auswertung */
+        .full-results-table {
+            position: absolute;
+            top: 0;
+            left: 10px;
+            width: 460px;
+            height: 150px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .factors-legend {
+            position: absolute;
+            top: 160px;
+            left: 10px;
+            width: 460px;
+            height: 20px;
+            background-color: var(--tft-subtitle);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: var(--tft-text);
+            font-size: 12px;
+        }
+
+        .chart-button {
+            position: absolute;
+            top: 190px;
+            left: 10px;
+            width: 220px;
+            height: 30px;
+            background-color: var(--tft-title-bg);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--tft-highlight);
+            font-size: 12px;
+        }
+
+        .next-button {
+            position: absolute;
+            top: 190px;
+            left: 240px;
+            width: 230px;
+            height: 30px;
+            background-color: var(--tft-success);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--tft-text);
+            font-size: 12px;
+        }
+
+        /* Regression Screen */
+        .model-box {
+            position: absolute;
+            top: 0;
+            left: 20px;
+            width: 440px;
+            height: 90px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .model-title {
+            color: var(--tft-highlight);
+            margin-bottom: 10px;
+        }
+
+        .model-equation {
+            color: var(--tft-text);
+        }
+
+        .coefficients-box {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 220px;
+            height: 120px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .coef-title {
+            color: var(--tft-highlight);
+            margin-bottom: 10px;
+        }
+
+        .coef-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .coef-label {
+            width: 70px;
+            color: var(--tft-text);
+        }
+
+        .coef-value {
+            width: 55px;
+            height: 15px;
+            background-color: var(--tft-title-bg);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--tft-text);
+            font-size: 10px;
+        }
+
+        .coef-value.positive {
+            background-color: var(--tft-success);
+        }
+
+        .coef-value.negative {
+            background-color: var(--tft-warning);
+        }
+
+        .quality-box {
+            position: absolute;
+            top: 100px;
+            left: 250px;
+            width: 210px;
+            height: 45px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .quality-title {
+            color: var(--tft-highlight);
+            margin-bottom: 10px;
+        }
+
+        .r2-row {
+            display: flex;
+            align-items: center;
+        }
+
+        .r2-label {
+            width: 50px;
+            color: var(--tft-text);
+        }
+
+        .r2-value {
+            width: 55px;
+            height: 15px;
+            background-color: var(--tft-success);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--tft-text);
+            font-size: 10px;
+        }
+
+        .optimal-box {
+            position: absolute;
+            top: 155px;
+            left: 250px;
+            width: 210px;
+            height: 85px;
+            background-color: var(--tft-success);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .optimal-title {
+            color: var(--tft-text);
+            margin-bottom: 10px;
+        }
+
+        .optimal-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .optimal-factor {
+            width: 70px;
+            color: var(--tft-text);
+        }
+
+        .optimal-value {
+            width: 120px;
+            height: 15px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            padding-left: 5px;
+            color: var(--tft-text);
+            font-size: 10px;
+        }
+
+        .optimal-high {
+            background-color: rgba(4, 255, 255, 0.3);
+        }
+
+        .optimal-low {
+            background-color: rgba(16, 130, 130, 0.5);
+        }
+
+        /* Zusammenfassung Screen */
+        .summary-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .factors-ranking {
+            width: 300px;
+            height: 170px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .ranking-header {
+            height: 20px;
+            background-color: var(--tft-title-bg);
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: var(--tft-highlight);
+            font-size: 12px;
+        }
+
+        .ranking-row {
+            height: 25px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+        }
+
+        .ranking-row.even {
+            background-color: rgba(16, 130, 130, 0.2);
+        }
+
+        .rank {
+            width: 20px;
+            color: var(--tft-text);
+        }
+
+        .rank-factor {
+            width: 100px;
+            color: var(--tft-text);
+        }
+
+        .effect-bar-container {
+            width: 100px;
+            height: 14px;
+            position: relative;
+        }
+
+        .effect-bar {
+            height: 14px;
+            position: absolute;
+            left: 0;
+        }
+
+        .effect-bar.positive {
+            background-color: var(--tft-success);
+        }
+
+        .effect-bar.negative {
+            background-color: var(--tft-warning);
+        }
+
+        .effect-value {
+            width: 50px;
+            text-align: right;
+            color: var(--tft-text);
+        }
+
+        .optimal-settings {
+            width: 150px;
+            height: 170px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .settings-header {
+            height: 20px;
+            background-color: var(--tft-title-bg);
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: var(--tft-highlight);
+            font-size: 12px;
+        }
+
+        .settings-row {
+            height: 25px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+        }
+
+        .setting-factor {
+            width: 70px;
+            color: var(--tft-text);
+        }
+
+        .setting-value {
+            display: flex;
+            align-items: center;
+        }
+
+        .setting-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 5px;
+            font-size: 10px;
+        }
+
+        .setting-text {
+            color: var(--tft-text);
+            font-size: 10px;
+        }
+
+        .prediction-box {
+            position: absolute;
+            top: 180px;
+            left: 10px;
+            width: 460px;
+            height: 40px;
+            background-color: var(--tft-success);
+            border-radius: 5px;
+            padding: 0 10px;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .prediction-title {
+            color: var(--tft-text);
+            margin-bottom: 5px;
+        }
+
+        .prediction-value {
+            color: var(--tft-text);
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* WiFi-Export Screen */
+        .wifi-export-box {
+            position: absolute;
+            top: 0;
+            left: 20px;
+            width: 440px;
+            height: 220px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .wifi-header {
+            height: 20px;
+            background-color: var(--tft-title-bg);
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: var(--tft-highlight);
+            font-size: 12px;
+        }
+
+        .wifi-content {
+            padding: 10px;
+            color: var(--tft-text);
+            font-size: 12px;
+        }
+
+        .wifi-info {
+            margin-bottom: 10px;
+        }
+
+        .wifi-url {
+            margin: 10px 0;
+            padding: 5px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        .wifi-steps {
+            margin-top: 20px;
+        }
+
+        /* Gespeicherte Versuche Screen */
+        .saved-experiments {
+            position: absolute;
+            top: 0;
+            left: 20px;
+            width: 440px;
+            height: 220px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .experiments-header {
+            height: 20px;
+            background-color: var(--tft-title-bg);
+            display: flex;
+            align-items: center;
+            color: var(--tft-highlight);
+            font-size: 12px;
+        }
+
+        .experiments-header div {
+            padding: 0 5px;
+        }
+
+        .experiment-row {
+            height: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            border-top: 1px solid var(--tft-grid);
+        }
+
+        .experiment-row.even {
+            background-color: rgba(16, 130, 130, 0.2);
+        }
+
+        .experiment-row div {
+            padding: 0 5px;
+            color: var(--tft-text);
+        }
+
+        /* Diagramme */
+        .chart-container {
+            position: absolute;
+            top: 0;
+            left: 20px;
+            width: 440px;
+            height: 200px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .chart-title {
+            color: var(--tft-highlight);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .chart-area {
+            width: 100%;
+            height: 150px;
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .chart-bar {
+            position: absolute;
+            bottom: 0;
+            background-color: var(--tft-chart-bar);
+            border: 1px solid var(--tft-highlight);
+        }
+
+        .chart-bar.positive {
+            background-color: var(--tft-success);
+        }
+
+        .chart-bar.negative {
+            background-color: var(--tft-warning);
+        }
+
+        .chart-label {
+            position: absolute;
+            bottom: -20px;
+            text-align: center;
+            color: var(--tft-text);
+            font-size: 10px;
+            transform: translateX(-50%);
+        }
+
+        .chart-value {
+            position: absolute;
+            top: -15px;
+            text-align: center;
+            color: var(--tft-text);
+            font-size: 10px;
+            transform: translateX(-50%);
+        }
+
+        .chart-axis {
+            position: absolute;
+            background-color: var(--tft-text);
+        }
+
+        .chart-x-axis {
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+        }
+
+        .chart-y-axis {
+            bottom: 0;
+            left: 0;
+            width: 1px;
+            height: 100%;
+        }
+
+        .chart-info {
+            position: absolute;
+            top: 210px;
+            left: 20px;
+            width: 440px;
+            height: 40px;
+            background-color: var(--tft-outline);
+            border-radius: 5px;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            color: var(--tft-subtitle);
+            font-size: 12px;
+        }
+
+        /* Warnungen */
+        .warning-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 80px;
+            background-color: var(--tft-warning);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            color: var(--tft-text);
+            font-size: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .success-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 80px;
+            background-color: var(--tft-success);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            color: var(--tft-text);
+            font-size: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Windturbinen-Experiment Simulation</h1>
+        
+        <div class="display-container">
+            <!-- Gemeinsame Elemente -->
+            <div class="title-bar">Windkraftanlagen-Experiment</div>
+            
+            <!-- Verbesserte Motor-Status-Box -->
+            <div class="motor-status"></div>
+            
+            <!-- Verbesserte Batterie-Anzeige -->
+            <div class="battery-status">
+                <div class="battery-fill"></div>
+            </div>
+            <div class="battery-text">80% 3.7V</div>
+            
+            <!-- Inhalt (wird je nach Bildschirm angepasst) -->
+            <div class="content">
+                <!-- Intro Screen (Startbildschirm) -->
+                <div class="intro-title">Windkraftanlagen-Experiment</div>
+                <div class="intro-subtitle">Design of Experiments</div>
+                <div class="intro-line"></div>
+                <div class="intro-text">In diesem Experiment werden Sie:</div>
+                
+                <div class="intro-steps">
+                    <div class="step-box">
+                        <div class="step-number">1</div>
+                        <div class="step-text">Teilfaktoriellen Versuch (2^(5-2)) durchführen</div>
+                    </div>
+                    <div class="step-box">
+                        <div class="step-number">2</div>
+                        <div class="step-text">Daten auswerten und Haupteffekte berechnen</div>
+                    </div>
+                    <div class="step-box">
+                        <div class="step-number">3</div>
+                        <div class="step-text">Vollfaktoriellen Versuch mit 3 Faktoren durchführen</div>
+                    </div>
+                    <div class="step-box">
+                        <div class="step-number">4</div>
+                        <div class="step-text">Abschließende Regression erstellen</div>
+                    </div>
+                </div>
+                
+                <div class="factor-box">Faktoren: Steigung, Größe, Abstand, Luft, Blatt</div>
+                
+                <div class="data-buttons">
+                    <div class="data-button">1: Gespeicherte Versuche</div>
+                    <div class="data-button">2: Daten exportieren</div>
+                </div>
+                
+                <div class="continue-hint">Drücken zum Starten</div>
+            </div>
+            
+            <div class="status-bar">Drücken: Starten | 1: Gespeicherte Versuche | 2: Daten exportieren</div>
+            <div class="back-button">D=Zur.</div>
+        </div>
+        
+        <div class="controls">
+            <button id="intro-btn" class="active">Intro</button>
+            <button id="plan-btn">Teilfaktorieller Plan</button>
+            <button id="messung-btn">Messung</button>
+            <button id="auswertung-btn">Auswertung</button>
+            <button id="vollfaktoriell-btn">Vollfaktorieller Plan</button>
+            <button id="regression-btn">Regression</button>
+            <button id="zusammenfassung-btn">Zusammenfassung</button>
+            <button id="wifi-export-btn">WiFi Export</button>
+            <button id="pareto-btn">Pareto Diagramm</button>
+        </div>
+        
+        <div class="screen-info">
+            Klicken Sie auf die Buttons oben, um zwischen den verschiedenen Bildschirmen zu wechseln.
+        </div>
+    </div>
+
+    <script>
+        // Einfache Navigation zwischen den Bildschirmen
+        document.querySelectorAll('.controls button').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.controls button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Bildschirm-Inhalte aktualisieren basierend auf Button-ID
+                updateScreen(this.id);
+            });
+        });
+        
+        function updateScreen(screenId) {
+            const display = document.querySelector('.display-container');
+            const content = display.querySelector('.content');
+            const titleBar = display.querySelector('.title-bar');
+            const statusBar = display.querySelector('.status-bar');
+            
+            // Bildschirm-spezifische Inhalte
+            let screenContent = '';
+            let titleContent = 'Windkraftanlagen-Experiment';
+            let statusContent = '';
+            
+            switch(screenId) {
+                case 'intro-btn':
+                    // Intro-Bildschirm (bereits in HTML definiert)
+                    titleContent = 'Windkraftanlagen-Experiment';
+                    statusContent = 'Drücken: Starten | 1: Gespeicherte Versuche | 2: Daten exportieren';
+                    break;
+                    
+                case 'plan-btn':
+                    titleContent = 'Teilfaktorieller Versuchsplan (2^(5-2))';
+                    statusContent = 'Drücken Sie den Drehknopf, um mit den Messungen zu beginnen.';
+                    
+                    screenContent = `
+                        <div class="plan-table">
+                            <div class="table-header">
+                                <div style="width: 40px;">Nr.</div>
+                                <div style="width: 75px;">Steigung</div>
+                                <div style="width: 75px;">Größe</div>
+                                <div style="width: 75px;">Abstand</div>
+                                <div style="width: 75px;">Luft</div>
+                                <div style="width: 75px;">Blatt</div>
+                            </div>
+                            
+                            <!-- Beispieldaten für den teilfaktoriellen Plan -->
+                            <div class="table-row even">
+                                <div style="width: 40px;">1</div>
+                                <div style="width: 75px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 75px;" class="table-cell-minus">-klein</div>
+                                <div style="width: 75px;" class="table-cell-minus">-nah</div>
+                                <div style="width: 75px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 75px;" class="table-cell-plus">+3</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">2</div>
+                                <div style="width: 75px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 75px;" class="table-cell-minus">-klein</div>
+                                <div style="width: 75px;" class="table-cell-minus">-nah</div>
+                                <div style="width: 75px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 75px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row even">
+                                <div style="width: 40px;">3</div>
+                                <div style="width: 75px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 75px;" class="table-cell-plus">+groß</div>
+                                <div style="width: 75px;" class="table-cell-minus">-nah</div>
+                                <div style="width: 75px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 75px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">4</div>
+                                <div style="width: 75px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 75px;" class="table-cell-plus">+groß</div>
+                                <div style="width: 75px;" class="table-cell-minus">-nah</div>
+                                <div style="width: 75px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 75px;" class="table-cell-plus">+3</div>
+                            </div>
+                            <div class="table-row even">
+                                <div style="width: 40px;">5</div>
+                                <div style="width: 75px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 75px;" class="table-cell-minus">-klein</div>
+                                <div style="width: 75px;" class="table-cell-plus">+fern</div>
+                                <div style="width: 75px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 75px;" class="table-cell-plus">+3</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">6</div>
+                                <div style="width: 75px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 75px;" class="table-cell-minus">-klein</div>
+                                <div style="width: 75px;" class="table-cell-plus">+fern</div>
+                                <div style="width: 75px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 75px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row even">
+                                <div style="width: 40px;">7</div>
+                                <div style="width: 75px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 75px;" class="table-cell-plus">+groß</div>
+                                <div style="width: 75px;" class="table-cell-plus">+fern</div>
+                                <div style="width: 75px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 75px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">8</div>
+                                <div style="width: 75px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 75px;" class="table-cell-plus">+groß</div>
+                                <div style="width: 75px;" class="table-cell-plus">+fern</div>
+                                <div style="width: 75px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 75px;" class="table-cell-plus">+3</div>
+                            </div>
+                        </div>
+                        
+                        <div class="legend-box">
+                            <span class="legend-minus">-:</span>
+                            <span class="legend-text">niedrige Stufe</span>
+                            <span class="legend-plus">+:</span>
+                            <span class="legend-text">hohe Stufe</span>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'messung-btn':
+                    titleContent = 'Teilfaktorieller Versuch: 1/8';
+                    statusContent = 'Drücken Sie den Drehknopf, um eine Messung durchzuführen.';
+                    
+                    screenContent = `
+                        <div class="measurement-container">
+                            <div class="factor-settings">
+                                <div class="factor-title">Bitte stellen Sie folgende Werte ein:</div>
+                                
+                                <div class="factor-row">
+                                    <div class="factor-name">Steigung:</div>
+                                    <div class="factor-value">10°</div>
+                                    <div class="factor-indicator factor-low">(-)</div>
+                                </div>
+                                
+                                <div class="factor-row">
+                                    <div class="factor-name">Größe:</div>
+                                    <div class="factor-value">klein</div>
+                                    <div class="factor-indicator factor-low">(-)</div>
+                                </div>
+                                
+                                <div class="factor-row">
+                                    <div class="factor-name">Abstand:</div>
+                                    <div class="factor-value">nah</div>
+                                    <div class="factor-indicator factor-low">(-)</div>
+                                </div>
+                                
+                                <div class="factor-row">
+                                    <div class="factor-name">Luft:</div>
+                                    <div class="factor-value">schwach</div>
+                                    <div class="factor-indicator factor-low">(-)</div>
+                                </div>
+                                
+                                <div class="factor-row">
+                                    <div class="factor-name">Blatt:</div>
+                                    <div class="factor-value">3</div>
+                                    <div class="factor-indicator factor-high">(+)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="measurements">
+                                <div class="measurement-title">Durchgeführte Messungen:</div>
+                                
+                                <div class="measurement-row">
+                                    <div class="measurement-label">Messung 1:</div>
+                                    <div class="measurement-value measurement-filled">12.45 µW</div>
+                                </div>
+                                
+                                <div class="measurement-row">
+                                    <div class="measurement-label">Messung 2:</div>
+                                    <div class="measurement-value measurement-filled">13.02 µW</div>
+                                </div>
+                                
+                                <div class="measurement-row">
+                                    <div class="measurement-label">Messung 3:</div>
+                                    <div class="measurement-value measurement-filled">12.78 µW</div>
+                                </div>
+                                
+                                <div class="measurement-row">
+                                    <div class="measurement-label">Messung 4:</div>
+                                    <div class="measurement-value measurement-empty">---</div>
+                                </div>
+                                
+                                <div class="measurement-row">
+                                    <div class="measurement-label">Messung 5:</div>
+                                    <div class="measurement-value measurement-empty">---</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="results-box">
+                            <div class="average-label">Aktueller Mittelwert:</div>
+                            <div class="average-value">12.75 µW</div>
+                            
+                            <div class="progress-label">Messfortschritt:</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: 60%;"></div>
+                            </div>
+                            <div class="progress-text">3/5</div>
+                        </div>
+                        
+                        <div class="keypad-help">
+                            Keypad: # = Messung wiederholen, * = Letzte Messung löschen
+                        </div>
+                    `;
+                    break;
+                    
+                case 'auswertung-btn':
+                    titleContent = 'Teilfaktorieller Versuch: Ergebnisse';
+                    statusContent = 'Drücken: Vollfakt. Versuch';
+                    
+                    screenContent = `
+                        <div class="results-container">
+                            <div class="results-table">
+                                <div class="table-header" style="width: 100%;">
+                                    <div style="width: 35px;">Nr.</div>
+                                    <div style="width: 95px;">Mittelwert (µW)</div>
+                                    <div style="width: 90px;">Std.-Abw.</div>
+                                </div>
+                                
+                                <!-- Beispieldaten für die Ergebnistabelle -->
+                                <div class="table-row even" style="width: 100%;">
+                                    <div style="width: 35px;">1</div>
+                                    <div style="width: 95px;">12.75</div>
+                                    <div style="width: 90px;">0.287</div>
+                                </div>
+                                <div class="table-row" style="width: 100%;">
+                                    <div style="width: 35px;">2</div>
+                                    <div style="width: 95px;">18.32</div>
+                                    <div style="width: 90px;">0.412</div>
+                                </div>
+                                <div class="table-row even" style="width: 100%;">
+                                    <div style="width: 35px;">3</div>
+                                    <div style="width: 95px;">15.47</div>
+                                    <div style="width: 90px;">0.325</div>
+                                </div>
+                                <div class="table-row" style="width: 100%;">
+                                    <div style="width: 35px;">4</div>
+                                    <div style="width: 95px;">14.23</div>
+                                    <div style="width: 90px;">0.298</div>
+                                </div>
+                                <div class="table-row even" style="width: 100%;">
+                                    <div style="width: 35px;">5</div>
+                                    <div style="width: 95px;">16.89</div>
+                                    <div style="width: 90px;">0.356</div>
+                                </div>
+                                <div class="table-row" style="width: 100%;">
+                                    <div style="width: 35px;">6</div>
+                                    <div style="width: 95px;">13.45</div>
+                                    <div style="width: 90px;">0.278</div>
+                                </div>
+                                <div class="table-row even" style="width: 100%;">
+                                    <div style="width: 35px;">7</div>
+                                    <div style="width: 95px;">14.78</div>
+                                    <div style="width: 90px;">0.312</div>
+                                </div>
+                                <div class="table-row" style="width: 100%;">
+                                    <div style="width: 35px;">8</div>
+                                    <div style="width: 95px;">22.56</div>
+                                    <div style="width: 90px;">0.487</div>
+                                </div>
+                            </div>
+                            
+                            <div class="effects-table">
+                                <div class="table-header" style="width: 100%;">
+                                    <div style="width: 100%; text-align: center;">Haupteffekte</div>
+                                </div>
+                                
+                                <!-- Beispieldaten für die Effekte -->
+                                <div class="table-row even" style="width: 100%;">
+                                    <div style="width: 75px;">Steigung:</div>
+                                    <div style="width: 60px; color: var(--tft-success);">+2.54 µW</div>
+                                    <div style="width: 90px; position: relative;">
+                                        <div style="position: absolute; top: 3px; left: 0; width: 50px; height: 14px; background-color: var(--tft-success);"></div>
+                                    </div>
+                                </div>
+                                <div class="table-row" style="width: 100%;">
+                                    <div style="width: 75px;">Größe:</div>
+                                    <div style="width: 60px; color: var(--tft-success);">+0.87 µW</div>
+                                    <div style="width: 90px; position: relative;">
+                                        <div style="position: absolute; top: 3px; left: 0; width: 17px; height: 14px; background-color: var(--tft-success);"></div>
+                                    </div>
+                                </div>
+                                <div class="table-row even" style="width: 100%;">
+                                    <div style="width: 75px;">Abstand:</div>
+                                    <div style="width: 60px; color: var(--tft-warning);">-0.32 µW</div>
+                                    <div style="width: 90px; position: relative;">
+                                        <div style="position: absolute; top: 3px; left: 0; width: 6px; height: 14px; background-color: var(--tft-warning);"></div>
+                                    </div>
+                                </div>
+                                <div class="table-row" style="width: 100%;">
+                                    <div style="width: 75px;">Luftst.:</div>
+                                    <div style="width: 60px; color: var(--tft-success);">+3.78 µW</div>
+                                    <div style="width: 90px; position: relative;">
+                                        <div style="position: absolute; top: 3px; left: 0; width: 75px; height: 14px; background-color: var(--tft-success);"></div>
+                                    </div>
+                                </div>
+                                <div class="table-row even" style="width: 100%;">
+                                    <div style="width: 75px;">Blattanz.:</div>
+                                    <div style="width: 60px; color: var(--tft-warning);">-1.23 µW</div>
+                                    <div style="width: 90px; position: relative;">
+                                        <div style="position: absolute; top: 3px; left: 0; width: 24px; height: 14px; background-color: var(--tft-warning);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="selected-factors">
+                            <div class="selected-title">Ausgewählte Faktoren:</div>
+                            <div class="selected-names">Steigung, Luftstärke, Blattanzahl</div>
+                        </div>
+                        
+                        <div class="chart-options">
+                            <div class="chart-option">
+                                <div>1: Balken-</div>
+                                <div>diagramm</div>
+                            </div>
+                            <div class="chart-option">
+                                <div>2: Main</div>
+                                <div>Effects Plot</div>
+                            </div>
+                            <div class="chart-option">
+                                <div>3: Inter-</div>
+                                <div>action Plot</div>
+                            </div>
+                            <div class="chart-option">
+                                <div>4: Pareto-</div>
+                                <div>diagramm</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'vollfaktoriell-btn':
+                    titleContent = 'Vollfaktorieller Versuchsplan (2^3)';
+                    statusContent = 'Drücken Sie den Drehknopf, um mit den Messungen zu beginnen.';
+                    
+                    screenContent = `
+                        <div class="fixed-factors">
+                            <div class="fixed-header">Fixierte Faktoren (konstant):</div>
+                            <div class="fixed-content">Größe=klein, Abstand=fern</div>
+                        </div>
+                        
+                        <div class="full-plan">
+                            <div class="table-header">
+                                <div style="width: 40px;">Nr.</div>
+                                <div style="width: 120px;">Steigung</div>
+                                <div style="width: 120px;">Luftstärke</div>
+                                <div style="width: 120px;">Blattanzahl</div>
+                            </div>
+                            
+                            <!-- Beispieldaten für den vollfaktoriellen Plan -->
+                            <div class="table-row even">
+                                <div style="width: 40px;">1</div>
+                                <div style="width: 120px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 120px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 120px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">2</div>
+                                <div style="width: 120px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 120px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 120px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row even">
+                                <div style="width: 40px;">3</div>
+                                <div style="width: 120px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 120px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 120px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">4</div>
+                                <div style="width: 120px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 120px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 120px;" class="table-cell-minus">-2</div>
+                            </div>
+                            <div class="table-row even">
+                                <div style="width: 40px;">5</div>
+                                <div style="width: 120px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 120px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 120px;" class="table-cell-plus">+3</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">6</div>
+                                <div style="width: 120px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 120px;" class="table-cell-minus">-schwach</div>
+                                <div style="width: 120px;" class="table-cell-plus">+3</div>
+                            </div>
+                            <div class="table-row even">
+                                <div style="width: 40px;">7</div>
+                                <div style="width: 120px;" class="table-cell-minus">-10°</div>
+                                <div style="width: 120px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 120px;" class="table-cell-plus">+3</div>
+                            </div>
+                            <div class="table-row">
+                                <div style="width: 40px;">8</div>
+                                <div style="width: 120px;" class="table-cell-plus">+30°</div>
+                                <div style="width: 120px;" class="table-cell-plus">+stark</div>
+                                <div style="width: 120px;" class="table-cell-plus">+3</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'regression-btn':
+                    titleContent = 'Regressionsmodell';
+                    statusContent = 'Drücken: Zusammenfassung';
+                    
+                    screenContent = `
+                        <div class="model-box">
+                            <div class="model-title">Regressionsmodell:</div>
+                            <div class="model-equation">
+                                Leistung = 16.05 + 2.54*Steigung + 3.78*Luft - 1.23*Blatt + 0.87*Steigung*Luft - 0.32*Steigung*Blatt + 0.15*Luft*Blatt
+                            </div>
+                        </div>
+                        
+                        <div class="coefficients-box">
+                            <div class="coef-title">Koeffizienten:</div>
+                            
+                            <div class="coef-row">
+                                <div class="coef-label">Konstante:</div>
+                                <div class="coef-value">16.05</div>
+                            </div>
+                            
+                            <div class="coef-row">
+                                <div class="coef-label">Steigung:</div>
+                                <div class="coef-value positive">+2.54</div>
+                            </div>
+                            
+                            <div class="coef-row">
+                                <div class="coef-label">Luft:</div>
+                                <div class="coef-value positive">+3.78</div>
+                            </div>
+                            
+                            <div class="coef-row">
+                                <div class="coef-label">Blatt:</div>
+                                <div class="coef-value negative">-1.23</div>
+                            </div>
+                            
+                            <div class="coef-row">
+                                <div class="coef-label">St.*Luft:</div>
+                                <div class="coef-value positive">+0.87</div>
+                            </div>
+                        </div>
+                        
+                        <div class="quality-box">
+                            <div class="quality-title">Modellgüte:</div>
+                            
+                            <div class="r2-row">
+                                <div class="r2-label">R²:</div>
+                                <div class="r2-value">0.94</div>
+                            </div>
+                        </div>
+                        
+                        <div class="optimal-box">
+                            <div class="optimal-title">Optimale Einstellungen:</div>
+                            
+                            <div class="optimal-row">
+                                <div class="optimal-factor">Steigung:</div>
+                                <div class="optimal-value optimal-high">+30° (hoch)</div>
+                            </div>
+                            
+                            <div class="optimal-row">
+                                <div class="optimal-factor">Luft:</div>
+                                <div class="optimal-value optimal-high">stark (hoch)</div>
+                            </div>
+                            
+                            <div class="optimal-row">
+                                <div class="optimal-factor">Blatt:</div>
+                                <div class="optimal-value optimal-low">2 (niedrig)</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'zusammenfassung-btn':
+                    titleContent = 'Zusammenfassung der Ergebnisse';
+                    statusContent = 'Drücken: Beenden';
+                    
+                    screenContent = `
+                        <div class="summary-container">
+                            <div class="factors-ranking">
+                                <div class="ranking-header">Faktoren nach Einfluss sortiert:</div>
+                                
+                                <div class="ranking-row even">
+                                    <div class="rank">1.</div>
+                                    <div class="rank-factor">Luftstärke</div>
+                                    <div class="effect-bar-container">
+                                        <div class="effect-bar positive" style="width: 75px;"></div>
+                                    </div>
+                                    <div class="effect-value">+3.78 µW</div>
+                                </div>
+                                
+                                <div class="ranking-row">
+                                    <div class="rank">2.</div>
+                                    <div class="rank-factor">Steigung</div>
+                                    <div class="effect-bar-container">
+                                        <div class="effect-bar positive" style="width: 50px;"></div>
+                                    </div>
+                                    <div class="effect-value">+2.54 µW</div>
+                                </div>
+                                
+                                <div class="ranking-row even">
+                                    <div class="rank">3.</div>
+                                    <div class="rank-factor">Blattanzahl</div>
+                                    <div class="effect-bar-container">
+                                        <div class="effect-bar negative" style="width: 24px;"></div>
+                                    </div>
+                                    <div class="effect-value">-1.23 µW</div>
+                                </div>
+                                
+                                <div class="ranking-row">
+                                    <div class="rank">4.</div>
+                                    <div class="rank-factor">Größe</div>
+                                    <div class="effect-bar-container">
+                                        <div class="effect-bar positive" style="width: 17px;"></div>
+                                    </div>
+                                    <div class="effect-value">+0.87 µW</div>
+                                </div>
+                                
+                                <div class="ranking-row even">
+                                    <div class="rank">5.</div>
+                                    <div class="rank-factor">Abstand</div>
+                                    <div class="effect-bar-container">
+                                        <div class="effect-bar negative" style="width: 6px;"></div>
+                                    </div>
+                                    <div class="effect-value">-0.32 µW</div>
+                                </div>
+                            </div>
+                            
+                            <div class="optimal-settings">
+                                <div class="settings-header">Optimale Einstellungen:</div>
+                                
+                                <div class="settings-row">
+                                    <div class="setting-factor">Steigung:</div>
+                                    <div class="setting-value">
+                                        <div class="setting-indicator" style="background-color: var(--tft-highlight);">+</div>
+                                        <div class="setting-text">30°</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="settings-row">
+                                    <div class="setting-factor">Größe:</div>
+                                    <div class="setting-value">
+                                        <div class="setting-indicator" style="background-color: var(--tft-highlight);">+</div>
+                                        <div class="setting-text">groß</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="settings-row">
+                                    <div class="setting-factor">Abstand:</div>
+                                    <div class="setting-value">
+                                        <div class="setting-indicator" style="background-color: var(--tft-highlight);">+</div>
+                                        <div class="setting-text">fern</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="settings-row">
+                                    <div class="setting-factor">Luft:</div>
+                                    <div class="setting-value">
+                                        <div class="setting-indicator" style="background-color: var(--tft-highlight);">+</div>
+                                        <div class="setting-text">stark</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="settings-row">
+                                    <div class="setting-factor">Blatt:</div>
+                                    <div class="setting-value">
+                                        <div class="setting-indicator" style="background-color: var(--tft-light-text);">-</div>
+                                        <div class="setting-text">2</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="prediction-box">
+                            <div class="prediction-title">Vorhergesagte maximale Leistung:</div>
+                            <div class="prediction-value">24.87 µW</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'wifi-export-btn':
+                    titleContent = 'WiFi Datenexport';
+                    statusContent = 'Drücken: Zurück';
+                    
+                    screenContent = `
+                        <div class="wifi-export-box">
+                            <div class="wifi-header">WiFi Datenexport</div>
+                            <div class="wifi-content">
+                                <div class="wifi-info">
+                                    Das Gerät hat einen WiFi-Hotspot erstellt. Verbinden Sie sich mit diesem Netzwerk:
+                                </div>
+                                
+                                <div class="wifi-info">
+                                    <strong>SSID:</strong> WindTurbine_Experiment<br>
+                                    <strong>Passwort:</strong> doe12345
+                                </div>
+                                
+                                <div class="wifi-url">
+                                    http://192.168.4.1/data
+                                </div>
+                                
+                                <div class="wifi-steps">
+                                    1. Verbinden Sie sich mit dem WiFi-Netzwerk<br>
+                                    2. Öffnen Sie die URL in einem Browser<br>
+                                    3. Laden Sie die CSV-Datei herunter
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'pareto-btn':
+                    titleContent = 'Pareto-Diagramm';
+                    statusContent = 'Drücken: Zurück';
+                    
+                    screenContent = `
+                        <div class="chart-container">
+                            <div class="chart-title">Pareto-Diagramm der Effekte</div>
+                            
+                            <div class="chart-area">
+                                <!-- X und Y Achsen -->
+                                <div class="chart-x-axis"></div>
+                                <div class="chart-y-axis"></div>
+                                
+                                <!-- Balken für die Effekte -->
+                                <div class="chart-bar positive" style="left: 50px; width: 40px; height: 120px;">
+                                    <div class="chart-value">3.78</div>
+                                    <div class="chart-label">Luft</div>
+                                </div>
+                                
+                                <div class="chart-bar positive" style="left: 120px; width: 40px; height: 80px;">
+                                    <div class="chart-value">2.54</div>
+                                    <div class="chart-label">Steigung</div>
+                                </div>
+                                
+                                <div class="chart-bar negative" style="left: 190px; width: 40px; height: 40px;">
+                                    <div class="chart-value">-1.23</div>
+                                    <div class="chart-label">Blatt</div>
+                                </div>
+                                
+                                <div class="chart-bar positive" style="left: 260px; width: 40px; height: 25px;">
+                                    <div class="chart-value">0.87</div>
+                                    <div class="chart-label">St*Luft</div>
+                                </div>
+                                
+                                <div class="chart-bar negative" style="left: 330px; width: 40px; height: 10px;">
+                                    <div class="chart-value">-0.32</div>
+                                    <div class="chart-label">St*Blatt</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-info">
+                            Signifikanzgrenze: 0.5 µW | Positive Effekte erhöhen die Leistung, negative verringern sie.
+                        </div>
+                    `;
+                    break;
+                
+                default:
+                    // Standardmäßig den Intro-Bildschirm anzeigen
+                    titleContent = 'Windkraftanlagen-Experiment';
+                    statusContent = 'Drücken: Starten | 1: Gespeicherte Versuche | 2: Daten exportieren';
+                    break;
+            }
+            
+            // Inhalte aktualisieren
+            if (screenContent) {
+                content.innerHTML = screenContent;
+            }
+            
+            titleBar.textContent = titleContent;
+            statusBar.textContent = statusContent;
+            
+            // Zusätzliche Elemente anzeigen/verstecken basierend auf dem Bildschirm
+            if (screenId === 'wifi-export-btn') {
+                // Motor-Status und Batterie-Anzeige ausblenden
+                display.querySelector('.motor-status').style.display = 'none';
+                display.querySelector('.battery-status').style.display = 'none';
+                display.querySelector('.battery-text').style.display = 'none';
+            } else {
+                // Motor-Status und Batterie-Anzeige einblenden
+                display.querySelector('.motor-status').style.display = 'block';
+                display.querySelector('.battery-status').style.display = 'flex';
+                display.querySelector('.battery-text').style.display = 'block';
+            }
+            
+            // Warnungen und Erfolgsmeldungen (als Beispiel)
+            if (screenId === 'messung-btn' && Math.random() > 0.8) {
+                // Zufällig eine Warnung anzeigen (nur zu Demonstrationszwecken)
+                const warningTypes = [
+                    'Kein Motor angeschlossen! Bitte überprüfen Sie die Verbindung.',
+                    'Batterie schwach! Bitte laden Sie das Gerät auf.',
+                    'Sensor-Fehler! Bitte starten Sie das Gerät neu.'
+                ];
+                
+                const randomWarning = warningTypes[Math.floor(Math.random() * warningTypes.length)];
+                
+                const warningBox = document.createElement('div');
+                warningBox.className = 'warning-box';
+                warningBox.textContent = randomWarning;
+                display.appendChild(warningBox);
+                
+                // Warnung nach 3 Sekunden ausblenden
+                setTimeout(() => {
+                    display.removeChild(warningBox);
+                }, 3000);
+            }
+        }
+        
+        // Initial den Intro-Bildschirm anzeigen
+        updateScreen('intro-btn');
+    </script>
+</body>
+</html>
